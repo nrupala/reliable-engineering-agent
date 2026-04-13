@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reliable Engineering Agent</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        #chat-container {
+            height: 400px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            background-color: #fafafa;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #3498db;
+            color: white;
+            margin-left: auto;
+        }
+        .agent-message {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+        }
+        #input-area {
+            display: flex;
+            gap: 10px;
+        }
+        #user-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #send-button {
+            padding: 12px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #send-button:hover {
+            background-color: #2980b9;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .models-dropdown {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Reliable Engineering Agent</h1>
+            <p>AI assistant following strict engineering principles</p>
+        </header>
+        
+        <div id="chat-container"></div>
+        
+        <div class="status-bar">
+            <div>
+                <label for="model-select">Model:</label>
+                <select id="model-select" class="models-dropdown"></select>
+            </div>
+            <div id="connection-status">Status: Disconnected</div>
+        </div>
+        
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off">
+            <button id="send-button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        class AgentClient {
+            constructor() {
+                this.ws = null;
+                this.models = [];
+                this.selectedModel = null;
+                this.init();
+            }
+            
+            init() {
+                this.domElements = {
+                    chatContainer: document.getElementById('chat-container'),
+                    userInput: document.getElementById('user-input'),
+                    sendButton: document.getElementById('send-button'),
+                    modelSelect: document.getElementById('model-select'),
+                    connectionStatus: document.getElementById('connection-status')
+                };
+                
+                this.bindEvents();
+                this.connectWebSocket();
+                this.fetchModels();
+            }
+            
+            bindEvents() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.userInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.sendMessage();
+                });
+                this.modelSelect.addEventListener('change', (e) => {
+                    this.selectedModel = e.target.value;
+                });
+            }
+            
+            connectWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}`;
+                
+                try {
+                    this.ws = new WebSocket(wsUrl);
+                    
+                    this.ws.onopen = () => {
+                        this.updateConnectionStatus('Connected', 'green');
+                    };
+                    
+                    this.ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        
+                        if (data.type === 'response') {
+                            this.addMessage(data.content, 'agent');
+                        } else if (data.type === 'error') {
+                            this.addMessage(`Error: ${data.message}`, 'agent', true);
+                        }
+                    };
+                    
+                    this.ws.onclose = () => {
+                        this.updateConnectionStatus('Disconnected', 'red');
+                        // Try to reconnect after 3 seconds
+                        setTimeout(() => this.connectWebSocket(), 3000);
+                    };
+                    
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.updateConnectionStatus('Error', 'orange');
+                    };
+                } catch (error) {
+                    console.error('Failed to create WebSocket:', error);
+                    this.updateConnectionStatus('Error', 'red');
+                }
+            }
+            
+            updateConnectionStatus(text, color) {
+                this.connectionStatus.textContent = `Status: ${text}`;
+                this.connectionStatus.style.color = color;
+            }
+            
+            async fetchModels() {
+                try {
+                    const response = await fetch('/api/models');
+                    const data = await response.json();
+                    this.models = data.models || [];
+                    this.populateModelSelect();
+                } catch (error) {
+                    console.error('Failed to fetch models:', error);
+                }
+            }
+            
+            populateModelSelect() {
+                this.modelSelect.innerHTML = '<option value="">Select a model (optional)</option>';
+                this.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model.id;
+                    option.textContent = model.id;
+                    this.modelSelect.appendChild(option);
+                });
+                
+                // Auto-select first model if available
+                if (this.models.length > 0) {
+                    this.modelSelect.value = this.models[0].id;
+                    this.selectedModel = this.models[0].id;
+                }
+            }
+            
+            sendMessage() {
+                const message = this.userInput.value.trim();
+                if (!message) return;
+                
+                // Add user message to chat
+                this.addMessage(message, 'user');
+                
+                // Clear input
+                this.userInput.value = '';
+                
+                // Send to agent via WebSocket
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    const payload = {
+                        type: 'chat',
+                        message: message,
+                        model: this.selectedModel || undefined
+                    };
+                    
+                    this.ws.send(JSON.stringify(payload));
+                } else {
+                    // Fallback to REST API if WebSocket not available
+                    this.sendViaRestApi(message);
+                }
+            }
+            
+            async sendViaRestApi(message) {
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            model: this.selectedModel || undefined
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.response) {
+                        this.addMessage(data.response, 'agent');
+                    } else if (data.error) {
+                        this.addMessage(`Error: ${data.error}`, 'agent', true);
+                    }
+                } catch (error) {
+                    this.addMessage(`Error: ${error.message}`, 'agent', true);
+                }
+            }
+            
+            addMessage(content, type, isError = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}-message`;
+                
+                if (isError && type === 'agent') {
+                    messageDiv.style.color = '#e74c3c';
+                }
+                
+                messageDiv.textContent = content;
+                this.chatContainer.appendChild(messageDiv);
+                
+                // Scroll to bottom
+                this.chatContainer.scrollTop = this.chatContainer.scrollHeight;
+            }
+        }
+        
+        // Initialize the client when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.agentClient = new AgentClient();
+        });
+    </script>
+</body>
+</html>

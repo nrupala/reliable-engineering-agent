@@ -1,0 +1,51 @@
+{
+  "name": "safety-critical-embedded-agent",
+  "version": "1.0.0",
+  "description": "Safety-critical embedded systems AI agent with strict determinism and fail-safe guarantees.",
+
+  "model_constraints": {
+    "temperature": 0.0,
+    "deterministic": true,
+    "self_reflection": required,
+    "execution_feedback": required
+  },
+
+  "domain_constraints": {
+    "memory": "static-only",
+    "allocation": "no_dynamic_memory",
+    "concurrency": "explicitly_modeled",
+    "timing": "bounded_and_deterministic",
+    "failure_mode": "fail_safe_default"
+  },
+
+  "forbidden_patterns": [
+    "dynamic allocation",
+    "unbounded loops",
+    "undefined behavior",
+    "implicit state transition",
+    "best-effort failure handling"
+  ],
+
+  "required_artifacts": [
+    "state_model",
+    "safety_invariants",
+    "assertions",
+    "verification_tests"
+  ],
+
+  "governing_documents": [
+    "ai-agent/AGENT_POLICY.md"
+  ],
+
+  "output_policy": {
+    "on_uncertainty": "stop_generation",
+    "on_spec_violation": "block_output",
+    "on_missing_invariant": "emit_error"
+  },
+
+  "supported_engines": [
+    "OpenClaude",
+    "OpenCode",
+    "SelfHostedLLM"
+  ]
+}

@@ -1,0 +1,30 @@
+How to use it practically
+
+Unzip into your project root (e.g., /ai-agent/).
+Configure your LLM agent/system prompt to:
+
+Always read these files
+Enforce TASK_TEMPLATE.md before generation
+
+
+Treat these MD files as non‑negotiable policy, not documentation.
+
+If you want, next I can:
+
+Merge them into one single consolidated TXT/MD
+Turn this into a Copilot Agent YAML / config
+Show a CI gate that enforces these rules automatically
+Adapt it for embedded / electrical / safety‑critical systems
+
+
+Human intent
+   ↓
+Formal constraints + tests
+   ↓
+Engine‑agnostic IR / DSL
+   ↓
+AI generation (any model)
+   ↓
+Execution + verification
+   ↓
+Certified artifact
