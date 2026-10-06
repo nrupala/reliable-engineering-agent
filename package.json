@@ -1,6 +1,6 @@
 {
   "name": "reliable-engineering-agent",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A disciplined AI coding agent with web and CLI interfaces",
   "main": "src/index.js",
   "type": "module",
