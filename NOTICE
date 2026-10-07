@@ -1,0 +1,8 @@
+Reliable Engineering Agent
+
+Owned by Nrupal Akolkar · Built with Muse by Meta
+
+A disciplined AI coding agent with web and CLI interfaces that follows strict
+engineering principles. Works with LM Studio (GGUF), Ollama, and OpenAI APIs.
+
+MIT license — see LICENSE.
